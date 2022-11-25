@@ -1,4 +1,4 @@
-<bold align="center"></bold>Fork of Homer which includes an API to modify config.yml file</bold>
+<p align="center"><bold></bold>Fork of Homer which includes an API to modify config.yml file</bold></p>
 
 <h1 align="center">
  <img
