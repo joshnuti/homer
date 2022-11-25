@@ -24,3 +24,6 @@ yarn-error.log*
 config.yml
 
 .drone.yml
+
+# Python
+**/__pycache__

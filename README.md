@@ -7,6 +7,8 @@
     Homer
 </h1>
 
+**Fork of Homer which includes an API to modify config.yml file**
+
 <h4 align="center">
  A dead simple static <strong>HOM</strong>epage for your serv<strong>ER</strong> to keep your services on hand, from a simple <code>yaml</code> configuration file.
 </h4>
