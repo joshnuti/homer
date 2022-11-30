@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile
-from ..helpers.file import config_path
+from ..helpers.file import config_path, add_id_and_order
 
 router = APIRouter(
     prefix="/config/replace",
@@ -17,4 +17,6 @@ async def upload(file: UploadFile = File(...)):
     finally:
         file.file.close()
 
+    add_id_and_order()
+    
     return {"message": f"Successfully uploaded {file.filename}"}
