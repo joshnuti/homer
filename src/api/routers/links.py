@@ -1,17 +1,17 @@
 from fastapi import APIRouter
-from ..helpers.models import Link
-from ..helpers.config import read_config, write_config
+from ..models.link import Link
+from ..helpers.file import read_config, write_config
 
 router = APIRouter(
-    prefix="/link",
+    prefix="/config/link",
     tags=['Links']
 )
 
-@router.get('s', response_model=list[Link], tags=['Links'])
+@router.get('s', response_model=list[Link])
 async def get_links():
     return read_config()['links']
 
-@router.post('', response_model=Link, tags=['Links'])
+@router.post('', response_model=Link)
 async def new_link(link: Link):
     config = read_config()
     config['links'].append(link.dict())
@@ -24,7 +24,7 @@ async def new_link(link: Link):
     else:
         return None
 
-@router.get('/{name}', response_model=Link, tags=['Links'])
+@router.get('/{name}', response_model=Link)
 async def get_link(name: str):
     links = read_config()['links']
     filtered_links = list(filter(lambda x: x['name'] == name, links))
@@ -34,11 +34,11 @@ async def get_link(name: str):
     else:
         return None
     
-@router.patch('/{name}', response_model=Link, tags=['Links'])
+@router.patch('/{name}', response_model=Link)
 async def patch_link(name: str, link: Link):
     pass
 
-@router.delete('/{name}', response_model=Link, tags=['Links'])
+@router.delete('/{name}', response_model=Link)
 async def delete_link(name: str):
     config = read_config()
     removed_links = list(filter(lambda x: x['name'] == name, config['links']))
