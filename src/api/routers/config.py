@@ -9,20 +9,16 @@ router = APIRouter(
 
 @router.get('', response_model=Config)
 async def get_config():
-    config = read_config()
-    return config
+    return read_config()
 
 @router.patch('', response_model=Config)
 async def patch_config(new_config: ConfigIn):
     config = read_config()
+
     new_config = { k:v for (k,v) in new_config.dict().items() if v != None}
 
-    if new_config['defaults']['layout']: 
-        new_config['defaults']['layout'] = new_config['defaults']['layout'].value
-
-    if new_config['defaults']['colorTheme']: 
-        new_config['defaults']['colorTheme'] = new_config['defaults']['colorTheme'].value
-
+    config = config.dict()
     config.update(new_config)
+    config = Config(**config)
 
     return write_config(config)
