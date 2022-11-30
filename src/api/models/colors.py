@@ -10,7 +10,7 @@ class ColorsDetail(BaseModel):
     text_header: str | None = None
     text_title: str | None = None
     text_subtitle: str | None = None
-    card_shadow: str
+    card_shadow: str | None = None
     link: str | None = None
     link_hover: str | None = None
     background_image: str | None = None

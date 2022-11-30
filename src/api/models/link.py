@@ -1,9 +1,23 @@
 from pydantic import BaseModel
 
 class Link(BaseModel):
-    id: int | None = -1
-    order: int | None = -1
+    id: int | None = None
+    order: int | None = None
     name: str
     url: str
-    icon: str | None = ''
-    target: str | None = ''
+    icon: str | None = None
+    target: str | None = None
+
+class LinkIn(BaseModel):
+    order: int | None = None
+    name: str
+    url: str
+    icon: str | None = None
+    target: str | None = None
+
+class LinkModify(BaseModel):
+    order: int | None = None
+    name: str | None = None
+    url: str | None = None
+    icon: str | None = None
+    target: str | None = None

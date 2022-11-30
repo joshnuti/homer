@@ -1,23 +1,42 @@
 from pydantic import BaseModel
 
 class Item(BaseModel):
-    id: int
+    id: int | None = None
+    order: int | None = None
     name: str
-    logo: str | None = ''
-    icon: str | None = ''
-    subtitle: str | None = ''
-    url: str | None = ''
-    type: str | None = ''
-    target: str | None = ''
-    background: str | None = ''
+    logo: str | None = None
+    icon: str | None = None
+    subtitle: str | None = None
+    url: str | None = None
+    type: str | None = None
+    target: str | None = None
+    background: str | None = None
 
 class Service(BaseModel):
-    id: int
+    id: int | None = None
+    order: int | None = None
     name: str
-    icon: str | None = ''
-    items: list[Item]
+    icon: str | None = None
+    items: list[Item] | None = []
 
+class ItemIn(BaseModel):
+    order: int | None = None
+    name: str
+    logo: str | None = None
+    icon: str | None = None
+    subtitle: str | None = None
+    url: str | None = None
+    type: str | None = None
+    target: str | None = None
+    background: str | None = None
+    
 class ServiceIn(BaseModel):
     name: str
-    icon: str | None = ''
-    items: list[Item] | None = []
+    order: int | None = None
+    icon: str | None = None
+
+class ServiceModify(BaseModel):
+    name: str | None = None
+    order: int | None = None
+    icon: str | None = None
+    # items: list[ItemIn] | None = []
