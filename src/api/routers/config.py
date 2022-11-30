@@ -1,20 +1,28 @@
-from fastapi import APIRouter, File, UploadFile
-from ..helpers.config import config_path
+from fastapi import APIRouter
+from ..models.config import Config, ConfigIn
+from ..helpers.file import read_config, write_config
 
 router = APIRouter(
-    prefix="/replace_config",
-    tags=['Defaults']
+    prefix="/config",
+    tags=['Config']
 )
 
-@router.post("")
-async def upload(file: UploadFile = File(...)):
-    try:
-        contents = file.file.read()
-        with open(config_path, 'wb') as f:
-            f.write(contents)
-    except Exception:
-        return {"message": "There was an error uploading the file"}
-    finally:
-        file.file.close()
+@router.get('', response_model=Config)
+async def get_config():
+    config = read_config()
+    return config
 
-    return {"message": f"Successfully uploaded {file.filename}"}
+@router.patch('', response_model=Config)
+async def patch_config(new_config: ConfigIn):
+    config = read_config()
+    new_config = { k:v for (k,v) in new_config.dict().items() if v != None}
+
+    if new_config['defaults']['layout']: 
+        new_config['defaults']['layout'] = new_config['defaults']['layout'].value
+
+    if new_config['defaults']['colorTheme']: 
+        new_config['defaults']['colorTheme'] = new_config['defaults']['colorTheme'].value
+
+    config.update(new_config)
+
+    return write_config(config)
