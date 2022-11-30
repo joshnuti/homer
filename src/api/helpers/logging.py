@@ -9,7 +9,7 @@ Logging Levels:
   - Error
 """
 
-LOG_LEVEL = getenv('API_LOG_LEVEL') | 'INFO'
+LOG_LEVEL = getenv('API_LOG_LEVEL')
 
 logger = getLogger("uvicorn.error")
 logger.setLevel(LOG_LEVEL)
