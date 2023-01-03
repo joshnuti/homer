@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header
 from ..models.link import Link, LinkIn, LinkModify
 from ..helpers.file import read_config_http, write_config_http
+from ..helpers.listofmodels import ListOfModels
 
 router = APIRouter(
     prefix="/config/link",
@@ -11,7 +12,7 @@ router = APIRouter(
 async def get_links(CONFIG_PATH: str | None = Header(None)):
     return read_config_http(CONFIG_PATH).links
 
-@router.post('', response_model=Link)
+@router.post('', response_model=Link, status_code=201)
 async def new_link(link: LinkIn, CONFIG_PATH: str | None = Header(None)):
     config = read_config_http(CONFIG_PATH)
 
@@ -19,7 +20,8 @@ async def new_link(link: LinkIn, CONFIG_PATH: str | None = Header(None)):
         raise HTTPException(409, f'Link with name "{link.name}" already exists')
 
     link = Link(**link.dict())
-    
+
+    config.links = ListOfModels(config.links)    
     new_id = config.links.max_id() + 1
     link.id = new_id
     if link.order == None: link.order = config.links.max_order() + 1
@@ -39,7 +41,7 @@ async def get_link(id: int, CONFIG_PATH: str | None = Header(None)):
     if len(link) == 1: return link[0]
     else: raise HTTPException(404, f'Link with id {id} not found')
     
-@router.patch('/{id}', response_model=Link)
+@router.patch('/{id}', response_model=Link, status_code=201)
 async def patch_link(id: int, link_modify: LinkModify, CONFIG_PATH: str | None = Header(None)):
     config = read_config_http(CONFIG_PATH)
 
@@ -71,6 +73,6 @@ async def delete_link(id: int, CONFIG_PATH: str | None = Header(None)):
 
     config.links = remaining_links
 
-    write_config_http(CONFIG_PATH, CONFIG_PATH, config)
+    write_config_http(CONFIG_PATH, config)
 
     return removed_link[0]

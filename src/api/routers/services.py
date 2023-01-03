@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header
 from ..models.services import Service, ServiceIn, ServiceModify, Item, ItemIn, ItemModify
 from ..helpers.file import read_config_http, write_config_http
+from ..helpers.listofmodels import ListOfModels
 
 router = APIRouter(
     prefix="/config/service",
@@ -37,7 +38,7 @@ async def get_services(CONFIG_PATH: str | None = Header(None)):
     return read_config_http(CONFIG_PATH).services
 
 
-@router.post('/', response_model=Service)
+@router.post('', response_model=Service, status_code=201)
 async def new_service(service: ServiceIn, CONFIG_PATH: str | None = Header(None)):
     config = read_config_http(CONFIG_PATH)
 
@@ -47,6 +48,7 @@ async def new_service(service: ServiceIn, CONFIG_PATH: str | None = Header(None)
 
     service = Service(**service.dict())
 
+    config.services = ListOfModels(config.services)
     new_id = config.services.max_id() + 1
     service.id = new_id
 
@@ -63,10 +65,10 @@ async def new_service(service: ServiceIn, CONFIG_PATH: str | None = Header(None)
 
 @router.get(path='/{id}', response_model=Service)
 async def get_service(id: int, CONFIG_PATH: str | None = Header(None)):
-    return get_service_helper(read_config_http(CONFIG_PATH), id)
+    return get_service_helper(read_config_http(CONFIG_PATH).services, id)
 
 
-@router.patch(path='/{id}', response_model=Service)
+@router.patch(path='/{id}', response_model=Service, status_code=201)
 async def patch_service(id: int, service_modify: ServiceModify, CONFIG_PATH: str | None = Header(None)):
     config = read_config_http(CONFIG_PATH)
 
@@ -106,7 +108,7 @@ async def delete_service(id: int, CONFIG_PATH: str | None = Header(None)):
     return removed_service[0]
 
 
-@router.post(path='/{service_id}/item', response_model=Item | None)
+@router.post(path='/{service_id}/item', response_model=Item | None, status_code=201)
 async def new_item(service_id: int, item: ItemIn, CONFIG_PATH: str | None = Header(None)):
     config = read_config_http(CONFIG_PATH)
 
@@ -116,6 +118,7 @@ async def new_item(service_id: int, item: ItemIn, CONFIG_PATH: str | None = Head
         raise HTTPException(404, f'Service with id {id} not found')
 
     service = service[0]
+    service.items = ListOfModels(service.items)
 
     if item.name in [x.name for x in service.items]:
         raise HTTPException(
@@ -146,7 +149,7 @@ async def get_item(service_id: int, item_id: int, CONFIG_PATH: str | None = Head
     service = get_service_helper(config.services, service_id)
     return get_item_helper(service.items, item_id)
 
-@router.patch(path='/{service_id}/item/{item_id}', response_model=Item)
+@router.patch(path='/{service_id}/item/{item_id}', response_model=Item, status_code=201)
 async def patch_item(service_id: int, item_id: int, item_modify: ItemModify, CONFIG_PATH: str | None = Header(None)):
     config = read_config_http(CONFIG_PATH)
     service = get_service_helper(config.services, service_id)
@@ -173,7 +176,7 @@ async def delete_item(service_id: int, item_id: int, CONFIG_PATH: str | None = H
     config = read_config_http(CONFIG_PATH)
     service = get_service_helper(config.services, service_id)
 
-    removed_item = get_item_helper(service.items, {item_id})
+    removed_item = get_item_helper(service.items, item_id)
 
     remaining_items = list(filter(lambda x: x.id != item_id, service.items))
     service.items = remaining_items
