@@ -18,9 +18,3 @@ class ColorsDetail(BaseModel):
 class Colors(BaseModel):
     dark: ColorsDetail
     light: ColorsDetail
-
-# config['colors']['dark'] = { k.replace('-', '_'):v for (k,v) in config['colors']['dark'].items() }
-# config['colors']['light'] = { k.replace('-', '_'):v for (k,v) in config['colors']['light'].items() }
-
-# config['colors']['dark']['card_shadow'] = Color(config['colors']['dark']['card_shadow']).as_rgb()
-# config['colors']['light']['card_shadow'] = Color(config['colors']['light']['card_shadow']).as_rgb()

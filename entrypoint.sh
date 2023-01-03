@@ -14,7 +14,5 @@ if [[ "${INIT_ASSETS}" == "1" ]] && [[ ! -f "/www/assets/config.yml" ]]; then
     if [[ $? -ne 0 ]]; then echo "Fail to copy default config file. $PERMISSION_ERROR" && exit 1; fi
 fi
 
-echo "$PWD"
 echo "Starting webserver"
-# exec gunicorn --bind 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker www.api.main:app
 exec lighttpd -D -f /lighttpd.conf & gunicorn --bind 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker api.main:app

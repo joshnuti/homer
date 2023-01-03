@@ -44,7 +44,6 @@ ENV PYTHONUNBUFFERED=1
 COPY /src/api/requirements.txt .
 RUN python -m pip install -r requirements.txt
 
-# COPY src/__init__.py .
 COPY src/api/. api
 
 EXPOSE 8000
