@@ -1,141 +1,122 @@
 from __future__ import annotations
 import ruamel.yaml as yaml
 from os.path import exists
+from os import remove
 from shutil import copyfile
 from sys import exc_info
 from ..models.config import Config
 from ..helpers.logging import logger
+from fastapi import HTTPException
+from re import search
+from .exceptions import InvalidConfigPathError, EmptyFileError, NoChangesMade
 
 # Relative path to config.yml and defaults.yml
 config_path = 'assets/config.yml'
 defaults_path = 'assets/defaults.yml'
 
+def verify_config_path(path: str | None, verify_exists: bool = True) -> Config:
+    if path == None:
+        path = config_path
 
-def sort_model(models: list[Item] | list[Service] | list[Link]):
-    return sorted(models, key=lambda x: (x.order, x.name))
+    if not search(r"^([A-z0-9-_+]+\/)*([A-z0-9]+\.(yml))$", path):
+        raise InvalidConfigPathError
 
+    if not exists(path) and verify_exists:
+        raise FileNotFoundError
 
-def read_config() -> Config:
-    logger.debug(f'Reading config at path {config_path}')
+    return path
 
-    with open(config_path, 'r') as file:
+def read_config(path: str | None) -> Config:
+    path = verify_config_path(path)
+
+    logger.debug(f'Reading config at path {path}')
+
+    with open(path, 'r') as file:
         try:
-            config = Config(**yaml.safe_load(file))
+            config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
-            logger.error(f'Unable to read config file at path {config_path}. Error: {exc}')
+            logger.error(f'Unable to read config file at path {path}. Error: {exc}')
     
+    if config == '' or not config:
+        raise EmptyFileError
+
+    config['colors'] = { k1 : { k2.replace('-', '_') : v2 for k2,v2 in v1.items()} for k1, v1 in config['colors'].items() }
+
     logger.debug('Config file read successfully')
 
-    return config
+    return Config(**config)
 
+def read_config_http(path: str | None) -> Config:
+    try:
+        return read_config(path)
+    except FileNotFoundError:
+        raise HTTPException(409, f'Config file not found at path {path}')
+    except InvalidConfigPathError:
+        raise HTTPException(400, 'CONFIG-PATH must point to a .yml file')
+    except EmptyFileError:
+        raise HTTPException(410, 'Config file empty')
 
-def write_config(config: Config) -> Config:
-    config.links = sort_model(config.links)
-    config.services = sort_model(config.services)
+def write_config(path: str | None, config: Config) -> Config:
+    path = verify_config_path(path, verify_exists=False)
+
+    old_config = read_config(path).dict()
     
-    for service in config.services:
-        service.items = sort_model(service.items)
-
-    if config.defaults != None:
-        if config.defaults.layout != None: 
+    if config.defaults:
+        if config.defaults.layout: 
             config.defaults.layout = config.defaults.layout.value
 
-        if config.defaults.colorTheme != None:
+        if config.defaults.colorTheme:
             config.defaults.colorTheme = config.defaults.colorTheme.value
+
+    config.clean()
 
     config = config.dict()
 
     config = {k: v for (k, v) in config.items() if v != None}
 
-    logger.debug(f'Writing new config to {config_path}')
+    config['links'] = [{k: v for (k, v) in x.items() if v != None} for x in config['links']]
+    config['services'] = [{k: v for (k, v) in x.items() if v != None} for x in config['services']]
+    
+    for service in config['services']:
+        service['items'] = [{k: v for (k, v) in x.items() if v != None} for x in service['items']]
 
-    with open(config_path, 'w') as file:
+    config['colors'] = { k1 : { k2.replace('_', '-') : v2 for k2,v2 in v1.items()} for k1, v1 in config['colors'].items() }
+
+    logger.debug(f'Writing new config to {path}')
+
+    with open(path, 'w') as file:
         try:
             yaml.safe_dump(config, file)
+            logger.debug(f'Config successfuly written')
         except yaml.YAMLError as exc:
             logger.error(f'Unable to write config. Error: {exc}')
+            yaml.safe_dump(old_config, file)
+            logger.info('Reverted to previous file')
+            raise NoChangesMade
 
-    logger.debug(f'Config successfuly written')
+    return read_config(config_path)
 
-    return read_config()
-
-
-def verify_config_exists() -> Config:
-    return exists(config_path)
-
-
-def copy_defaults() -> None:
-    if not exists(defaults_path):
-        raise FileNotFoundError
-
+def write_config_http(path: str | None, config: Config):
     try:
-        copyfile(defaults_path, config_path)
+        return write_config(path, config)
+    except InvalidConfigPathError:
+        raise HTTPException(400, 'CONFIG-PATH must point to a .yml file')
+    except NoChangesMade:
+        raise HTTPException(409, 'Unable to write config. Reverted to previous file')
+
+def copy_defaults(path: str | None) -> None:
+    path = verify_config_path(path, verify_exists=False)
+    
+    try:
+        copyfile(defaults_path, path)
     except IOError as e:
         print("Unable to copy file. %s" % e)
     except:
         print("Unexpected error:", exc_info())
 
+    write_config_http(path, read_config_http(None))
 
-def assign_missing_ids(models: list[Item] | list[Service] | list[Link]):
-    logger.debug("Assigning Missing IDs...")
-    if len(models) == 0:
-        logger.debug("No Models Found")
-        return models
-
-    missing_ids = missing_order = list(filter(lambda x: x.id == None, models))
-
-    if len(missing_ids) == 0:
-        logger.debug("No models missing IDs")
-        return models
-
-    logger.debug("Assigning IDs")
-
-    if len(missing_ids) == len(models):
-        max_id = 1
-    else:
-        has_ids = list(filter(lambda x: x.id != None, models))
-        max_id = max(has_ids, key=lambda x: x.id).id
-
-    for elem in missing_ids:
-        elem.id = max_id
-        max_id += 1
-
-    return models
-
-
-def assign_missing_order(models: list[Item] | list[Service] | list[Link]):
-    logger.debug("Assigning Missing Order...")
-    if len(models) == 0:
-        logger.debug("No Models Found")
-        return models
-
-    missing_order = list(filter(lambda x: x.order == None, models))
-
-    if len(missing_order) != len(models):
-        logger.debug("At least one model has an order")
-        return models
-
-    logger.debug("Assigning Order")
-
-    order = 1
-    for elem in models:
-        elem.order = order
-        order += 1
-
-    return models
-
-
-def add_id_and_order() -> Config:
-    config = read_config()
-
-    config.links = assign_missing_ids(config.links)
-    config.services = assign_missing_ids(config.services)
-
-    config.links = assign_missing_order(config.links)
-    config.services = assign_missing_order(config.services)
-
-    for service in config.services:
-        service.items = assign_missing_ids(service.items)
-        service.items = assign_missing_order(service.items)
-
-    write_config(config)
+def delete_file(path: str) -> None:
+    path = verify_config_path(path)
+    
+    remove(path)
