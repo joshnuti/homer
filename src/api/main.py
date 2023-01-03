@@ -9,13 +9,12 @@ app = FastAPI(
     title="Homer API",
     version="Dev",
     description="Icon prefix: 'fas fa-'",
-    # dependencies=[Security(authorize)]
 )
 
-app.include_router(config.router)
-app.include_router(file.router)
-app.include_router(links.router)
-app.include_router(services.router)
+app.include_router(config.router, dependencies=[Security(authorize)])
+app.include_router(file.router, dependencies=[Security(authorize)])
+app.include_router(links.router, dependencies=[Security(authorize)])
+app.include_router(services.router, dependencies=[Security(authorize)])
 
 
 @app.on_event("startup")
