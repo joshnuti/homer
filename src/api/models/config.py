@@ -3,6 +3,7 @@ from enum import Enum
 from .link import Link
 from .services import Service
 from .colors import Colors
+from ..helpers.listofmodels import ListOfModels
 
 class Layout(Enum):
     columns = 'columns'
@@ -54,8 +55,28 @@ class Config(BaseModel):
     colors: Colors | None = None
     ## 
     # message: Message | None = None
-    links: list[Link] | None = None
+    links: ListOfModels[Link] | None = None
     services: list[Service] | None = None
+
+    def clean(self):
+        if not isinstance(self.links, ListOfModels):
+            self.links = ListOfModels(self.links)
+
+        self.links.clean()
+        self.links = list(self.links)
+
+        if not isinstance(self.services, ListOfModels):
+            self.services = ListOfModels(self.services)
+        
+        self.services.clean()
+        self.services = list(self.services)
+
+        for service in self.services:
+            if not isinstance(service.items, ListOfModels):
+                service.items = ListOfModels(service.items)
+            
+            service.items.clean()
+            service.items = list(service.items)
 
 class ConfigIn(BaseModel):
     externalConfig: str | None = None
