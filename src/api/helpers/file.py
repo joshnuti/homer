@@ -12,10 +12,10 @@ from .exceptions import InvalidConfigPathError, EmptyFileError, NoChangesMade
 
 # Relative path to config.yml and defaults.yml
 config_path = 'assets/config.yml'
-defaults_path = 'assets/defaults.yml'
+defaults_path = '../public/assets/config.yml.dist'
 
 def verify_config_path(path: str | None, verify_exists: bool = True) -> Config:
-    if path == None:
+    if not path:
         path = config_path
 
     if not search(r"^([A-z0-9-_+]+\/)*([A-z0-9]+\.(yml))$", path):
