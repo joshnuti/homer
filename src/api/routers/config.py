@@ -1,19 +1,20 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from ..models.config import Config, ConfigIn
-from ..helpers.file import read_config, write_config
+from ..helpers.file import write_config_http, read_config_http
 
 router = APIRouter(
     prefix="/config",
-    tags=['Config']
+    tags=['Config'], 
 )
 
 @router.get('', response_model=Config)
-async def get_config():
-    return read_config()
+async def get_config(CONFIG_PATH: str | None = Header(None)):
+    config = read_config_http(CONFIG_PATH)
+    return config
 
 @router.patch('', response_model=Config)
-async def patch_config(new_config: ConfigIn):
-    config = read_config()
+async def patch_config(new_config: ConfigIn, CONFIG_PATH: str | None = Header(None)):
+    config = read_config_http(CONFIG_PATH)
 
     new_config = { k:v for (k,v) in new_config.dict().items() if v != None}
 
@@ -21,4 +22,4 @@ async def patch_config(new_config: ConfigIn):
     config.update(new_config)
     config = Config(**config)
 
-    return write_config(config)
+    return write_config_http(CONFIG_PATH, config)
