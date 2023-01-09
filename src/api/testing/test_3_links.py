@@ -1,4 +1,4 @@
-from .test_main import client
+from .test_1_main import client
 
 link_in = {
     "order": 5,
@@ -18,18 +18,13 @@ link_out = {
 }
 
 
-def test_reset_config():
-    response = client.put('/config/defaults')
-    assert response.status_code == 201
-
-
 def test_get():
-    response = client.get("/config/links")
+    response = client.get("/config/link")
     assert response.status_code == 200
 
 
 def test_get_invalid():
-    response = client.get('/config/links', {})
+    response = client.get('/config/link', {})
     assert response.status_code == 403
 
 
@@ -57,13 +52,28 @@ def test_get_specific_notfound():
 
 def test_patch():
     response = client.patch('/config/link/3', {'name': 'Test Link 2'})
-    assert response.status_code == 201
+    assert response.status_code == 200
+    link_in['name'] = 'Test Link 2'
     link_out['name'] = 'Test Link 2'
     assert response.json() == link_out
 
 
 def test_patch_notfound():
     response = client.patch('/config/link/4', {'name': 'Test Link 2'})
+    assert response.status_code == 404
+
+
+def test_put():
+    link_in.pop('target')
+    link_out.pop('target')
+
+    response = client.put('/config/link/3', link_in)
+    assert response.status_code == 200
+    assert response.json() == link_out
+
+
+def test_put_notfound():
+    response = client.put('/config/link/4', link_in)
     assert response.status_code == 404
 
 

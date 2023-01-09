@@ -23,11 +23,14 @@ class Client:
 
         return httpx.patch(f'{self.base_url}{path}', json=json, headers=headers)
 
-    def put(self, path: str, headers = None):
+    def put(self, path: str, json: dict = None, headers = None):
         if headers == None:
             headers = self.headers
 
-        return httpx.put(f'{self.base_url}{path}', headers=headers)
+        if json:
+            return httpx.put(f'{self.base_url}{path}', headers=headers, json=json)
+        else:
+            return httpx.put(f'{self.base_url}{path}', headers=headers)
 
     def delete(self, path: str, headers = None):
         if headers == None:
@@ -35,7 +38,7 @@ class Client:
 
         return httpx.delete(f'{self.base_url}{path}', headers=headers)
 
-client = Client('http://localhost:8000', {'Authorization': 'Bearer 1234'})
+client = Client('http://127.0.0.1:8000', {'Authorization': 'Bearer 1234'})
 
 def test_ping():
     response = client.get("/")
