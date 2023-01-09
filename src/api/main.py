@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Security
 from .helpers.logging import logger
 from .helpers.security import authorize
-from .helpers.file import verify_config_path, copy_defaults, write_config, read_config
-from .routers import config, file, links, services
+from .helpers.file import copy_defaults, write_config, read_config
+from .routers import config, file, links, services, service_items
 from .helpers.exceptions import EmptyFileError
 
 app = FastAPI(
@@ -12,10 +12,10 @@ app = FastAPI(
 )
 
 app.include_router(config.router, dependencies=[Security(authorize)])
-app.include_router(file.router, dependencies=[Security(authorize)])
 app.include_router(links.router, dependencies=[Security(authorize)])
 app.include_router(services.router, dependencies=[Security(authorize)])
-
+app.include_router(service_items.router, dependencies=[Security(authorize)])
+app.include_router(file.router, dependencies=[Security(authorize)])
 
 @app.on_event("startup")
 def startup_event():
