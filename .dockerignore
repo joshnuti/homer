@@ -5,3 +5,4 @@ dockerfile
 screenshot.png
 node_modules
 **/__pycache__
+src/api/testing
