@@ -6,3 +6,6 @@ class InvalidConfigPathError(Exception):
 
 class NoChangesMade(Exception):
     """Used when there's an error writing to file and no changes are made"""
+
+class ConfigFileNotFound(Exception):
+    """Used when trying to copy the defaults and the file can't be found"""
