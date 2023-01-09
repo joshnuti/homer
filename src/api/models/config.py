@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
-from .link import Link
-from .services import Service
+from .link import LinkOut
+from .services import ServiceOut
 from .colors import Colors
 from ..helpers.listofmodels import ListOfModels
 
@@ -24,11 +24,12 @@ class MessageMapping(BaseModel):
 
 class Message(BaseModel):
     url: str | None = None
-    mapping: MessageMapping | None = None
     style: str | None = None
     title: str | None = None
     icon: str | None = None
     content: str | None = None
+    mapping: MessageMapping | None = None
+    refreshInterval: int | None = None
 
 class Config(BaseModel):
     externalConfig: str | None = None
@@ -54,9 +55,9 @@ class Config(BaseModel):
     ##
     colors: Colors | None = None
     ## 
-    # message: Message | None = None
-    links: ListOfModels[Link] | None = None
-    services: list[Service] | None = None
+    message: Message | None = None
+    links: ListOfModels[LinkOut] | None = None
+    services: list[ServiceOut] | None = None
 
     def clean(self):
         if not isinstance(self.links, ListOfModels):
