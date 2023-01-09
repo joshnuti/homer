@@ -1,17 +1,20 @@
 from fastapi import APIRouter, File, UploadFile, Header, HTTPException
-from ..helpers.file import config_path
+from fastapi.responses import FileResponse
+from ..helpers.file import verify_config_path
 
 router = APIRouter(
     prefix="/config/file",
-    tags=['Config']
+    tags=['File'],
 )
 
-@router.post("")
+@router.get("", response_class=FileResponse, response_model_exclude_none=True)
+async def download(CONFIG_PATH: str | None = Header(None)):
+    path = verify_config_path(CONFIG_PATH)
+    return FileResponse(path, media_type='application/yaml')
+
+@router.post("", response_model_exclude_none=True)
 async def upload(file: UploadFile = File(...), CONFIG_PATH: str | None = Header(None)):
-    if CONFIG_PATH != None:
-        path = CONFIG_PATH
-    else:
-        path = config_path
+    path = verify_config_path(CONFIG_PATH)
 
     try:
         contents = file.file.read()
