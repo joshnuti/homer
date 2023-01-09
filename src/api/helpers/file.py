@@ -8,11 +8,13 @@ from ..models.config import Config
 from ..helpers.logging import logger
 from fastapi import HTTPException
 from re import search
-from .exceptions import InvalidConfigPathError, EmptyFileError, NoChangesMade
+from .exceptions import InvalidConfigPathError, EmptyFileError, NoChangesMade, ConfigFileNotFound
 
-# Relative path to config.yml and defaults.yml
+# Relative path to config.yml and defaults
 config_path = 'assets/config.yml'
-defaults_path = '../public/assets/config.yml.dist'
+defaults_path_dev = '../public/assets/config.yml.dist'
+defaults_path_prod = 'default-assets/config.yml.dist'
+
 
 def verify_config_path(path: str | None, verify_exists: bool = True) -> Config:
     if not path:
@@ -26,6 +28,7 @@ def verify_config_path(path: str | None, verify_exists: bool = True) -> Config:
 
     return path
 
+
 def read_config(path: str | None) -> Config:
     path = verify_config_path(path)
 
@@ -35,16 +38,19 @@ def read_config(path: str | None) -> Config:
         try:
             config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
-            logger.error(f'Unable to read config file at path {path}. Error: {exc}')
-    
+            logger.error(
+                f'Unable to read config file at path {path}. Error: {exc}')
+
     if config == '' or not config:
         raise EmptyFileError
 
-    config['colors'] = { k1 : { k2.replace('-', '_') : v2 for k2,v2 in v1.items()} for k1, v1 in config['colors'].items() }
+    config['colors'] = {k1: {k2.replace(
+        '-', '_'): v2 for k2, v2 in v1.items()} for k1, v1 in config['colors'].items()}
 
     logger.debug('Config file read successfully')
 
     return Config(**config)
+
 
 def read_config_http(path: str | None) -> Config:
     try:
@@ -56,13 +62,14 @@ def read_config_http(path: str | None) -> Config:
     except EmptyFileError:
         raise HTTPException(410, 'Config file empty')
 
+
 def write_config(path: str | None, config: Config) -> Config:
     path = verify_config_path(path, verify_exists=False)
 
     old_config = read_config(path).dict()
-    
+
     if config.defaults:
-        if config.defaults.layout: 
+        if config.defaults.layout:
             config.defaults.layout = config.defaults.layout.value
 
         if config.defaults.colorTheme:
@@ -74,13 +81,17 @@ def write_config(path: str | None, config: Config) -> Config:
 
     config = {k: v for (k, v) in config.items() if v != None}
 
-    config['links'] = [{k: v for (k, v) in x.items() if v != None} for x in config['links']]
-    config['services'] = [{k: v for (k, v) in x.items() if v != None} for x in config['services']]
-    
-    for service in config['services']:
-        service['items'] = [{k: v for (k, v) in x.items() if v != None} for x in service['items']]
+    config['links'] = [{k: v for (k, v) in x.items() if v != None}
+                       for x in config['links']]
+    config['services'] = [
+        {k: v for (k, v) in x.items() if v != None} for x in config['services']]
 
-    config['colors'] = { k1 : { k2.replace('_', '-') : v2 for k2,v2 in v1.items()} for k1, v1 in config['colors'].items() }
+    for service in config['services']:
+        service['items'] = [
+            {k: v for (k, v) in x.items() if v != None} for x in service['items']]
+
+    config['colors'] = {k1: {k2.replace(
+        '_', '-'): v2 for k2, v2 in v1.items()} for k1, v1 in config['colors'].items()}
 
     logger.debug(f'Writing new config to {path}')
 
@@ -96,27 +107,38 @@ def write_config(path: str | None, config: Config) -> Config:
 
     return read_config(config_path)
 
+
 def write_config_http(path: str | None, config: Config):
     try:
         return write_config(path, config)
     except InvalidConfigPathError:
         raise HTTPException(400, 'CONFIG-PATH must point to a .yml file')
     except NoChangesMade:
-        raise HTTPException(409, 'Unable to write config. Reverted to previous file')
+        raise HTTPException(
+            409, 'Unable to write config. Reverted to previous file')
+
 
 def copy_defaults(path: str | None) -> None:
     path = verify_config_path(path, verify_exists=False)
-    
+
     try:
-        copyfile(defaults_path, path)
+        if exists(defaults_path_dev):
+            copyfile(defaults_path_dev, path)
+        elif exists(defaults_path_prod):
+            copyfile(defaults_path_prod, path)
+        else:
+            raise IOError
     except IOError as e:
-        print("Unable to copy file. %s" % e)
+        logger.error("Unable to copy file. %s" % e)
+        raise ConfigFileNotFound
     except:
-        print("Unexpected error:", exc_info())
+        logger.error("Unexpected error:", exc_info())
+        raise ConfigFileNotFound
 
     write_config_http(path, read_config_http(None))
 
+
 def delete_file(path: str) -> None:
     path = verify_config_path(path)
-    
+
     remove(path)
